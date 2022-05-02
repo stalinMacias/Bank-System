@@ -51,9 +51,17 @@ contract BANKDEX {
         _;
     }
 
+    modifier enoughFundsAndNoLoan(uint _amount) {
+        require(activeLoan[msg.sender] == false, "Reverting transaction, user has an active loan");
+        require(depositBalance[msg.sender] - _amount >= 0, "Reverting transaction, user has not enough funds to perform this action");
+        _;
+    }
+
+    /*
     function getTotalSupply(address _token) public view returns(uint) {
         return IERC20(_token).totalSupply();
     }
+    */
 
     function getAllowance() public view returns(uint) {
         return IERC20(MTRX_Token).allowance(msg.sender,address(this));
@@ -68,6 +76,15 @@ contract BANKDEX {
         }
         hasDeposit[msg.sender] = true;
     }
+
+    function withdraw(uint _amount) public enoughFundsAndNoLoan(_amount) {
+        depositBalance[msg.sender] = depositBalance[msg.sender].sub(_amount);
+        IERC20(MTRX_Token).transfer(msg.sender,_amount);
+        // if current balance is equals to 0, set to false the hasDeposit mapping for this user...
+        if(depositBalance[msg.sender] == 0) {
+            hasDeposit[msg.sender] = false;
+        }
+    }  
 
 
 
