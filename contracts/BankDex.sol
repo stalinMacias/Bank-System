@@ -113,7 +113,7 @@ contract BANKDEX {
                 interests = balanceStaker.div(100).mul(12);
             }
             // Send the interests token to the user
-            IERC20(RMTRX_Token).transfer(msg.sender,interests);
+            IERC20(RMTRX_Token).transfer(staker,interests);
 
         }
     }
