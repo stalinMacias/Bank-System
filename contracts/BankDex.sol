@@ -30,6 +30,9 @@ contract BANKDEX {
     mapping(address => uint) public depositBalance;     // Track the deposit balance of the bank's clients
     mapping(address => bool) public hasDeposit;         // Keep track of the client's status deposits ... If their balance is greater than 0, the bool value will be true, which means that the user has some MTRX deposited in the Bank
 
+    mapping(address => bool) public activeLoan;         // Initialize set to false, when a user asks for a loan, this mapping will be set to true for that user, and will be set only and only until the loan is liquidated.
+    mapping(address => uint) public userDebt;          // When a user requests a loan, this mapping will save the total amount of debt that the user have, and as the user pays his debt, the total amount of debt will be decreasing accordingly
+
     constructor(address _MTRX, address _RMTRX) {
         owner = msg.sender;
         MTRX_Token = _MTRX;
@@ -84,7 +87,65 @@ contract BANKDEX {
         if(depositBalance[msg.sender] == 0) {
             hasDeposit[msg.sender] = false;
         }
-    }  
+    }
+
+    // Visiblity modifier should be private, but for development purposes in Remix will be set to public!
+    function issueInterest() public onlyOwner() {
+        for(uint i = 0; i < stakers.length; i++) {
+            address staker = stakers[i];
+            uint balanceStaker = depositBalance[staker];
+            uint interests;
+
+            if(balanceStaker > 0 || balanceStaker <= 999){
+                // Issue a 3% of interests
+                interests = balanceStaker.div(100).mul(3);
+            } else if(balanceStaker >= 1000 || balanceStaker <= 4999){
+                // Issue a 5% of interests
+                interests = balanceStaker.div(100).mul(5);
+            } else if(balanceStaker >= 5000 || balanceStaker <= 9999){
+                // Issue a 7% of interests
+                interests = balanceStaker.div(100).mul(7);
+            } else if(balanceStaker >= 10000 || balanceStaker <= 24999){
+                // Issue a 10% of interests
+                interests = balanceStaker.div(100).mul(10);
+            } else {
+                // Issue a 12% of interests
+                interests = balanceStaker.div(100).mul(12);
+            }
+            // Send the interests token to the user
+            IERC20(RMTRX_Token).transfer(msg.sender,interests);
+
+        }
+    }
+
+    // Visiblity modifier should be private, but for development purposes in Remix will be set to public!
+    function refillInterestsToken(uint _amount) public onlyOwner() {
+        // Transfer from the owner's balance to the Banks contract X amount of RMTRX token
+        // Will hit the same bug as in the Deposit function - Before executing this function, make sure that in the RMTRX contract the Bank's contract has already been approved as the Spender of the owner's tokens
+        IERC20(RMTRX_Token).transferFrom(msg.sender,address(this),_amount);
+    }
+
+    function askLoan(uint _amount) public enoughFundsAndNoLoan(_amount) {
+        activeLoan[msg.sender] = true;
+        uint totalInterest;
+        if(_amount > 0 || _amount <= 999){
+            // Charge a 12% of interests
+            totalInterest = _amount.div(100).mul(12);
+        } else if(_amount >= 1000 || _amount <= 4999){
+            // Charge a 10% of totalInterest
+            totalInterest = _amount.div(100).mul(10);
+        } else if(_amount >= 5000 || _amount <= 9999){
+            // Charge a 8% of totalInterest
+            totalInterest = _amount.div(100).mul(8);
+        } else if(_amount >= 10000 || _amount <= 24999){
+            // Charge a 6% of totalInterest
+            totalInterest = _amount.div(100).mul(6);
+        } else {
+            // Charge a 5% of totalInterest
+            totalInterest = _amount.div(100).mul(5);
+        }
+        userDebt[msg.sender] = _amount + totalInterest;
+    }
 
 
 
