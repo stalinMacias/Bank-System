@@ -11,7 +11,7 @@ Bank's Contract
 	- Charge fees when withdrawing
 	- If the user has a loan, it can't make a withdraw
 - Ask for a Loan
-	- Validate user has at least 50% of what is asking as balance in its accounts
+	- Validate user has enough funds to cover the requested amount [depositBalance minus amount must be >= to 0)
 	- Deny permission to the user to withdraw its funds while the loan has not been paid
 	- Charge Interests - Interests will be calculated at a fix rate
 	- Charge fees
